@@ -4,9 +4,7 @@ project(FluxoBid VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-#set(CMAKE_CXX_FLAGS "-ggdb -Wall -Wextra -Wpedantic -O3 -march=native -pthread -fPIC")
 
-# Low-latency optimization flags
 if(MSVC)
     add_compile_options(/W4 /Ot /arch:AVX2)
 else()
@@ -47,10 +45,8 @@ FetchContent_MakeAvailable(asio)
 if(NOT asio_POPULATED)
     FetchContent_Populate(asio)
     
-    # Manually define the INTERFACE target
     add_library(asio_interface INTERFACE)
     
-    # Point to the actual header directory within the fetched content
     target_include_directories(asio_interface INTERFACE "${asio_SOURCE_DIR}/asio/include")
     
     target_compile_definitions(asio_interface INTERFACE 
@@ -59,7 +55,6 @@ if(NOT asio_POPULATED)
         ASIO_HAS_STD_COROUTINE=1
     )
 
-    # Set required definitions and link Threads
     target_compile_definitions(asio_interface INTERFACE ASIO_STANDALONE)
     target_link_libraries(asio_interface INTERFACE Threads::Threads)
 endif()
@@ -73,7 +68,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 
-# Core Library (FluxoBid Engine Logic)
+# Core Library
 add_library(fluxo_core STATIC 
     src/core/bidder.cpp
     src/core/engine.cpp
@@ -85,21 +80,15 @@ target_include_directories(fluxo_core PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Link Asio (header-only) to the core
-#target_link_libraries(fluxo_core PRIVATE asio_interface)
 target_compile_definitions(fluxo_core PUBLIC ASIO_STANDALONE)
 
-# Main Executable (The FluxoBid Server)
 add_executable(fluxobid_server src/main.cpp)
 target_link_libraries(fluxobid_server PRIVATE fluxo_core)
 
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(fluxo_core PRIVATE -fmodules-ts -fmodule-mapper=local)
-    #target_compile_options(fluxo_core PRIVATE -Wno-exposed-tu-local-entity)
-    #target_compile_options(fluxo_core PRIVATE -fno-module-ts-check-tu-local)
     target_compile_options(fluxo_core PRIVATE "-fmodule-mapper=|@g++-mapper-server -r .")
-    #target_compile_options(fluxobid_server PRIVATE -fmodules-ts)
 endif()
 
 
@@ -107,22 +96,11 @@ set_target_properties(fluxo_core PROPERTIES
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-#target_precompile_headers(fluxo_core PRIVATE
-#    <iostream>
-#    <vector>
-#    <string_view>
-#    <string>
-#    <stop_token>
-#    <asio.hpp> 
-#)
-
-
 enable_testing()
 add_executable(unit_tests 
     tests/test_main.cpp 
     tests/test_targeting.cpp
     tests/test_ranges.cpp
-    #tests/test_bidder.cpp
 )
 target_link_libraries(unit_tests PRIVATE fluxo_core Catch2::Catch2WithMain)
 
@@ -134,7 +112,6 @@ add_test(NAME FluxoTests COMMAND unit_tests)
 add_executable(bidder_tests 
     tests/test_bidder.cpp
 )
-#add_library(yyjson STATIC /usr/lib64/libyyjson)
 target_link_libraries(bidder_tests PRIVATE 
     fluxo_core 
     Catch2::Catch2WithMain

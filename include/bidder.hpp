@@ -7,48 +7,47 @@ namespace fluxobid {
 
 // --- Sub-Objects ---
 struct Banner {
-    std::optional<int> w;            // Width in pixels
-    std::optional<int> h;            // Height in pixels
-    std::vector<int> battr;          // Blocked creative attributes
-    std::optional<int> pos;          // Ad position (e.g., above the fold)
+    std::optional<int> w;
+    std::optional<int> h;
+    std::vector<int> battr;
+    std::optional<int> pos;
 };
 
 struct Imp {
-    std::string_view id;             // Unique ID for this impression
-    std::optional<Banner> banner;    // Banner object (optional if Video/Native)
-    std::optional<double> bidfloor;  // Minimum bid price (CPM)
+    std::string_view id;
+    std::optional<Banner> banner;
+    std::optional<double> bidfloor;
     std::string_view bidfloorcur = "USD"; 
 };
 
 struct Device {
-    std::string_view ua;             // User agent
-    std::string_view ip;             // IPv4 or IPv6 address
-    std::optional<int> devicetype;   // 4=Phone, 5=Tablet, etc.
-    std::string_view os;             // Device OS (e.g., "iOS", "Android")
+    std::string_view ua;
+    std::string_view ip;
+    std::optional<int> devicetype;
+    std::string_view os;
 };
 
 struct Site {
-    std::string_view id;             // Site ID
-    std::string_view page;           // URL of the page
+    std::string_view id;
+    std::string_view page;
     std::optional<std::string_view> domain;
 };
 
 // --- Top-Level BidRequest Object ---
 struct BidRequest {
-    std::string_view id;             // Unique request ID [REQUIRED]
-    std::vector<Imp> imps;           // Array of impressions [REQUIRED]
-    std::optional<Site> site;        // Site object (mutually exclusive with App)
-    std::optional<Device> device;    // Device information
+    std::string_view id;
+    std::vector<Imp> imps;
+    std::optional<Site> site;
+    std::optional<Device> device;
     std::string_view device_ip;
-    std::optional<int> tmax;         // Max time for bid in ms
+    std::optional<int> tmax;
 };
 
 class Bidder {
 public:
-    // Takes raw JSON, returns true if we want to bid
     bool parse_request(std::string_view json_raw);
     const BidRequest& get_current_request() const;
-    
+   
 private:
     BidRequest current_request_;
 };
