@@ -22,11 +22,11 @@ struct Campaign {
 };
 
 class CampaignStore {
-public:
-    std::optional<Campaign> find_match(const Imp& imp, std::string_view country) const;
-
 private:
     std::vector<Campaign> _campaigns;
     std::unordered_map<std::string_view, std::vector<Campaign>> _campaigns_by_country;
+
+public:
+    std::optional<Campaign> find_match(const Imp& imp, std::string_view country) const;
 };
 }

@@ -59,9 +59,6 @@ if(NOT asio_POPULATED)
         ASIO_HAS_STD_COROUTINE=1
     )
 
-    #find_package(Boost REQUIRED COMPONENTS system)
-    #target_link_libraries(your_target PRIVATE Boost::system)
-
     target_compile_definitions(asio_interface INTERFACE ASIO_STANDALONE)
     target_link_libraries(asio_interface INTERFACE Threads::Threads)
 endif()
@@ -80,6 +77,8 @@ add_library(fluxo_core STATIC
     src/core/bidder.cpp
     src/core/engine.cpp
     src/core/store.cpp
+    src/core/server.cpp
+    src/core/session.cpp
 )
 
 target_include_directories(fluxo_core PUBLIC 
@@ -104,6 +103,11 @@ set_target_properties(fluxo_core PROPERTIES
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}
 )
 
+
+find_package(yyjson REQUIRED)
+target_link_libraries(fluxo_core PRIVATE yyjson)
+
+
 enable_testing()
 add_executable(unit_tests 
     tests/test_main.cpp 
@@ -114,7 +118,6 @@ target_link_libraries(unit_tests PRIVATE fluxo_core Catch2::Catch2WithMain)
 
 include(CTest)
 add_test(NAME FluxoTests COMMAND unit_tests)
-
 
 
 add_executable(bidder_tests 

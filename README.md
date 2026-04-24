@@ -1,16 +1,18 @@
 # FluxoBid: High-Performance OpenRTB 2.5 Core
 
-A high-performance, asynchronous Real-Time Bidding (RTB) engine built with C++20. Designed for ultra-low latency (<1ms internal) and high-concurrency environments, this project implements a production-grade bidding core capable of processing thousands of [OpenRTB 2.5](https://www.iab.com) requests per second.
+A high-performance, asynchronous Real-Time Bidding (RTB) engine built with C++20. Designed for ultra-low latency (<1ms internal) and high-concurrency environments, this project implements a bidding core capable of processing hundreds of [OpenRTB 2.5](https://www.iab.com) requests per second.
 
-## Key Architectural Features (Phase 1: Ingestion & Validation)
-*    **Zero-Copy JSON Ingestion**: Leverages ```std::string_view``` and the high-performance ```yyjson``` library to map incoming OpenRTB requests directly to C++ structs without heap allocations or redundant string copying.
-*    **Hybrid C++20 Module Strategy**: Implements a robust architectural split using C++20 Modules for core business logic while utilizing a Global Module Fragment to shield against compiler-specific limitations in third-party networking headers.
-*    **Multi-Impression Support**: Fully compliant with the OpenRTB 2.5 spec, allowing the engine to parse, validate, and store multiple imp objects (Banner/Video slots) per individual request.
-*    **Early-Exit Validation**: Includes a "Pre-Flight" validation layer that identifies "deal-breakers" (invalid IDs, low timeouts, or privacy restrictions) to trigger instant HTTP 204 No Content responses, preserving CPU for high-value auctions.
-*    **Type-Safe Modeling**: Uses C++20 Concepts and ```std::optional``` to enforce strict schema adherence for complex nested objects like Device, Site, and Banner configurations.
+## Key Architectural Features
+*   **Zero-Copy JSON Ingestion**: Leverages `std::string_view` and **yyjson** to map OpenRTB requests directly to C++ structs without heap allocations or redundant data copies.
+*   **Hybrid C++20 Module Strategy**: Utilizes a robust architectural split with **Named Modules** for business logic and **Global Module Fragments** to maintain stability with third-party networking headers (Asio).
+*   **Early-Exit Validation**: A "Pre-Flight" layer identifies "deal-breakers" (missing IDs, low timeouts) to trigger instant **HTTP 204 No Content** responses, preserving CPU for high-value auctions.
+*   **Type-Safe Modeling**: Employs **C++20 Concepts** and `std::optional` to enforce strict schema adherence for complex nested objects like `Device`, `Site`, and `Banner` configurations.
+*   **Asynchronous I/O Stack**: Implements a high-concurrency Server/Session pattern using **Asio Coroutines** to manage thousands of simultaneous TCP connections.
+
 
 ## Tech Stack & Requirements
-*    **Language**: C++20 (utilizing Modules, Concepts, and ```std::optional```)
+*    **Language**: C++20 (utilizing Concepts, and Coroutines)
+*    **Compiler**: Clang 16+ (optimized for diagnostics and C++20 standard compliance)
 *    **Build System**: CMake 3.28+
 *    **JSON Engine**: yyjson (C-based for maximum performance)
 *    **Networking**: [Asio](https://think-async.com/Asio/) (Standalone version)
@@ -19,18 +21,20 @@ A high-performance, asynchronous Real-Time Bidding (RTB) engine built with C++20
 ## Project Structure
 ```
 FluxoBid-Processor/
-├── include/
-│   └── bidder.hpp         # Header for bidder
+├── include/                # Public API, Models, and Concepts
 ├── src/
-│   └── core/
-│       └── bidder.cpp     # Logic implementation & JSON Parsing
+│   └── core/               # Bidder, Engine, and CampaignStore logic
+│   └── network/            # Server and Session connection management
 ├── tests/
-│   └── test_bidder.cpp    # Unit Test suite (Catch2) verifying OpenRTB compliance
-└── CMakeLists.txt         # Modern CMake build with C++20 Module support
+│   └── test_bidder.cpp     # Unit Test suite (Catch2) verifying OpenRTB compliance
+├── CMakeLists.txt          # Modern CMake build with C++20 Module support
+└── main.cpp                # Application entry point & Asio event loop
 ```
 
 ## Current Progress: Verified Parsing & Unit Testing
-The project has successfully reached the Ingestion Milestone. The test_bidder suite validates:
-*    Correct mapping of raw OpenRTB 2.5 JSON to internal C++ structs.
-*    Proper handling of std::string_view lifetimes relative to the yyjson document.
-*    Graceful failure and rejection of malformed or logically invalid bid requests.
+The project has successfully reached the Ingestion & Decisioning Milestone, moving from raw network bytes to a validated bidding decision.
+
+*    OpenRTB Ingestion & Auction Logic: Successfully implemented a "Sieve" matcher that parses multi-impression OpenRTB 2.5 payloads and filters campaigns based on Geography, Size, and Price Floor.
+*    Asynchronous Network Core: Developed a custom Server/Session architecture using Clang 16+ and Asio to handle concurrent TCP connections with minimal overhead.
+*    Protocol Handling: Supports the standard OpenRTB 2.5 response lifecycle, including automated HTTP 204 "No-Bid" signals and dynamic JSON BidResponse generation via yyjson.
+*    Automated Verification: Core logic is verified via a Catch2 v3 test suite (test_bidder) that validates stable field mapping, campaign matchmaking, and memory safety across the pipeline.

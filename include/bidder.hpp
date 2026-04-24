@@ -16,17 +16,20 @@ namespace fluxobid {
 
 class Bidder {
 private:
-    BidRequest _current_request;
-    CampaignStore _store;
+    BidRequest current_request_;
+    CampaignStore store_;
+
+    void send_http_204(asio::ip::tcp::socket& socket);
+    void send_http_200(asio::ip::tcp::socket& socket, const std::vector<Bid>& bids);
 
 public:
+    Bidder() = default;
+    Bidder(const CampaignStore& store);
+
     bool parse_request(std::string_view json_raw);
     const BidRequest& get_current_request() const;
     RejectReason validate_request(const BidRequest& req);
-    void handle_request(std::string_view json_raw);
-    
-    void send_http_204(asio::ip::tcp::socket& socket);
-    void send_bid_response(asio::ip::tcp::socket& socket, const std::vector<Bid>& bids);
+    void handle_request(asio::ip::tcp::socket& socket, std::string_view json_raw);
 };
 
 }

@@ -1,9 +1,3 @@
-/*
-#ifndef __INTELLISENSE__
-module;
-#endif
-*/
-
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -12,12 +6,6 @@ module;
 #include <yyjson.h>
 
 #include "../include/engine.hpp"
-
-/*
-#ifndef __INTELLISENSE__
-export module fluxobid.engine;
-#endif
-*/
 
 namespace fluxobid {
 
@@ -33,21 +21,13 @@ std::vector<Bid> Engine::evaluate_request(const BidRequest& req, const CampaignS
     wins.resize(req.imps.size());
     int i = 0;
 
-    // Iterate through every impression slot in the request
     for (const auto& imp : req.imps) {
-        // Find the best campaign for THIS specific impression
         auto best_campaign = store.find_match(imp, req.device_ip);
 
-        if (best_campaign) {        // If the campaign's price is higher than the floor, we bid
+        if (best_campaign) {
             if (best_campaign->price >= imp.bidfloor.value_or(0.0)) {
-                /*
-                Bid bid{imp.id, best_campaign->price, best_campaign->ad_id};    //works
-                wins.push_back(bid);
-                */
-                ///*
-                wins[i] = Bid(imp.id, best_campaign->price, best_campaign->ad_id); //works
+                wins[i] = Bid(imp.id, best_campaign->price, best_campaign->ad_id);
                 i++;
-                //*/
             }
         }
     }

@@ -1,49 +1,49 @@
 #include <asio.hpp>
 #include <iostream>
+#include <string_view>
 
 #include "../include/bidder.hpp"
-#include "../include/engine.hpp"
-#include "../include/reject_reason.hpp"
-#include "../include/metrics.hpp"
 #include "../include/store.hpp"
+#include "../include/server.hpp"
 
-//import fluxobid.bidder;
 
-/**
- * A simple coroutine that represents the starting point of my engine.
- * The 'asio::awaitable<void>' return type is what allows this function to be paused and resumed by the Asio event loop.
- */
-asio::awaitable<void> start_engine() {
-    // In a real adtech app, this is where you'd initialize your campaign cache and targeting rules.
-    std::cout << "FluxoBid Engine: Initializing high-speed bidding core..." << std::endl;
+asio::awaitable<void> handle_session(asio::ip::tcp::socket socket, const fluxobid::CampaignStore& store) {
+    try {
+        char buffer[4096];
+        std::size_t n = co_await socket.async_read_some(asio::buffer(buffer), asio::use_awaitable);
+        std::string_view json_raw(buffer, n);
+
+        fluxobid::Bidder bidder(store);
+        
+        bidder.handle_request(socket, json_raw);
+
+    } catch (std::exception& e) {
+        std::cerr << "Session Error: " << e.what() << std::endl;
+    }
+}
+
+
+asio::awaitable<void> server_listener(const fluxobid::CampaignStore& store) {
+    auto executor = co_await asio::this_coro::executor;
+    asio::ip::tcp::acceptor acceptor(executor, {asio::ip::tcp::v4(), 8080});
     
-    // We 'co_await' a timer to simulate a non-blocking startup delay
-    asio::steady_timer timer(co_await asio::this_coro::executor, std::chrono::milliseconds(100));
-    co_await timer.async_wait(asio::use_awaitable);
+    std::cout << "[FluxoBid] Listening on port 8080..." << std::endl;
 
-    std::cout << "FluxoBid Engine Started [C++20 Coroutines Active]" << std::endl;
+    for (;;) {
+        asio::ip::tcp::socket socket = co_await acceptor.async_accept(asio::use_awaitable);
+        
+        asio::co_spawn(executor, handle_session(std::move(socket), store), asio::detached);
+    }
 }
 
 int main() {
-    try {
-        // The io_context is the "engine room" that manages all async tasks
-        asio::io_context ctx;
+    asio::io_context io_context;
+    
+    fluxobid::CampaignStore store;
 
-        fluxobid::Metrics metrics; // Instantiate a Metrics object here and pass a reference to it into my Bidder class.
+    fluxobid::Server server{io_context, 8080, store};
 
-        fluxobid::CampaignStore store;
-
-
-        // 'co_spawn' attaches our coroutine to the context's executor 'asio::detached' means we don't need to wait for the result here
-        asio::co_spawn(ctx, start_engine(), asio::detached);
-
-        // This blocks until all asynchronous work is complete
-        ctx.run();
-    } 
-    catch (std::exception& e) {
-        std::cerr << "Fatal Error: " << e.what() << std::endl;
-        return 1;
-    }
-
+    io_context.run();
     return 0;
 }
+
