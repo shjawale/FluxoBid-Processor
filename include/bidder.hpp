@@ -1,56 +1,32 @@
 #pragma once
+
 #include <string_view>
 #include <vector>
 #include <optional>
+#include <iostream>
+#include <string>
+#include <asio.hpp>
+
+#include "reject_reason.hpp"
+#include "store.hpp"
+#include "bid.hpp"
+#include "models.hpp"
 
 namespace fluxobid {
 
-
-struct Banner {
-    std::optional<int> w;            
-    std::optional<int> h;            
-    std::vector<int> battr;          
-    std::optional<int> pos;          
-};
-
-struct Imp {
-    std::string_view id;             
-    std::optional<Banner> banner;    
-    std::optional<double> bidfloor;  
-    std::string_view bidfloorcur = "USD"; 
-};
-
-struct Device {
-    std::string_view ua;             
-    std::string_view ip;             
-    std::optional<int> devicetype;   
-    std::string_view os;             
-};
-
-struct Site {
-    std::string_view id;             
-    std::string_view page;           
-    std::optional<std::string_view> domain;
-};
-
-
-struct BidRequest {
-    std::string id;
-    std::vector<Imp> imps;
-    std::optional<Site> site;
-    std::optional<Device> device;
-    std::string_view device_ip;
-    std::optional<int> tmax;
-};
-
 class Bidder {
+private:
+    BidRequest _current_request;
+    CampaignStore _store;
+
 public:
-    
     bool parse_request(std::string_view json_raw);
     const BidRequest& get_current_request() const;
+    RejectReason validate_request(const BidRequest& req);
+    void handle_request(std::string_view json_raw);
     
-private:
-    BidRequest current_request_;
+    void send_http_204(asio::ip::tcp::socket& socket);
+    void send_bid_response(asio::ip::tcp::socket& socket, const std::vector<Bid>& bids);
 };
 
 }

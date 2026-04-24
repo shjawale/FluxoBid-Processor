@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.28)
 project(FluxoBid VERSION 0.1.0 LANGUAGES CXX)
 
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Low-latency optimization flags
 if(MSVC)
     add_compile_options(/W4 /Ot /arch:AVX2)
 else()
@@ -30,7 +31,9 @@ function(compile_gxx_header_units HEADERS)
     endforeach()
 endfunction()
 
-compile_gxx_header_units("${SYSTEM_HEADERS}")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    compile_gxx_header_units(...)
+endif()
 
 
 include(FetchContent)
@@ -40,7 +43,7 @@ find_package(Threads REQUIRED)
 FetchContent_Declare(
     asio
     GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
-    GIT_TAG        master
+    GIT_TAG         asio-1-30-2
 )
 FetchContent_MakeAvailable(asio)
 if(NOT asio_POPULATED)
@@ -56,6 +59,9 @@ if(NOT asio_POPULATED)
         ASIO_HAS_STD_COROUTINE=1
     )
 
+    #find_package(Boost REQUIRED COMPONENTS system)
+    #target_link_libraries(your_target PRIVATE Boost::system)
+
     target_compile_definitions(asio_interface INTERFACE ASIO_STANDALONE)
     target_link_libraries(asio_interface INTERFACE Threads::Threads)
 endif()
@@ -69,9 +75,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 
+# Core Library
 add_library(fluxo_core STATIC 
     src/core/bidder.cpp
     src/core/engine.cpp
+    src/core/store.cpp
 )
 
 target_include_directories(fluxo_core PUBLIC 
@@ -80,10 +88,8 @@ target_include_directories(fluxo_core PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Link Asio (header-only) to the core
 target_compile_definitions(fluxo_core PUBLIC ASIO_STANDALONE)
 
-# Main Executable (The FluxoBid Server)
 add_executable(fluxobid_server src/main.cpp)
 target_link_libraries(fluxobid_server PRIVATE fluxo_core)
 
@@ -97,7 +103,6 @@ endif()
 set_target_properties(fluxo_core PROPERTIES 
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}
 )
-
 
 enable_testing()
 add_executable(unit_tests 

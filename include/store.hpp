@@ -1,0 +1,32 @@
+#pragma once
+
+#include <iostream>
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
+#include <string_view>
+#include <cstdint>
+
+#include "models.hpp"
+
+namespace fluxobid {
+
+struct Campaign {
+    uint32_t campaign_id;
+    std::string_view ad_id;
+    double price;
+    std::string_view target_country;
+    std::string_view ad_markup;
+    int width;
+    int height;
+};
+
+class CampaignStore {
+public:
+    std::optional<Campaign> find_match(const Imp& imp, std::string_view country) const;
+
+private:
+    std::vector<Campaign> _campaigns;
+    std::unordered_map<std::string_view, std::vector<Campaign>> _campaigns_by_country;
+};
+}
