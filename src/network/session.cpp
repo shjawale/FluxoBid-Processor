@@ -2,12 +2,14 @@
 #include <memory>
 #include <vector>
 
-#include "../include/session.hpp"
+#include "../../include/session.hpp"
 
 namespace fluxobid {
 
 void Session::read_request() {
     auto self = shared_from_this();
+    std::cout << "Received request\n";
+    
     socket_.async_read_some(asio::buffer(buffer_),
         [this, self](std::error_code ec, std::size_t length) {
             if (!ec) {
@@ -23,6 +25,7 @@ void Session::read_request() {
 Session::Session(asio::ip::tcp::socket socket, const CampaignStore& store) : socket_(std::move(socket)), store_(store) {}
 
 void Session::start() {
+    std::cout << "Session started\n";
     read_request();
 }
 

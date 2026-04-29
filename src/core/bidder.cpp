@@ -1,18 +1,22 @@
 #include <asio.hpp>
+#include <yyjson.h>
+
 #include "../../include/bidder.hpp"
 #include "../../include/metrics.hpp"
 #include "../../include/engine.hpp"
-#include <yyjson.h>
+#include "../../include/geoprovider.hpp"
 
 namespace fluxobid {
 
 void Bidder::send_http_204(asio::ip::tcp::socket& socket) {
+    // The most minimal valid HTTP response
     static constexpr std::string_view response = 
         "HTTP/1.1 204 No Content\r\n"
         "Content-Length: 0\r\n"
         "Connection: keep-alive\r\n"
         "\r\n";
     
+    std::cout << "Sending response...\n";
     asio::write(socket, asio::buffer(response));
 }
 
@@ -30,9 +34,9 @@ void Bidder::send_http_200(asio::ip::tcp::socket& socket, const std::vector<Bid>
 
     for (const auto& b : bids) {
         yyjson_mut_val* bid_obj = yyjson_mut_arr_add_obj(doc, bid_arr);
-        yyjson_mut_obj_add_str(doc, bid_obj, "impid", b._imp_id.data());
-        yyjson_mut_obj_add_real(doc, bid_obj, "price", b._price);
-        yyjson_mut_obj_add_str(doc, bid_obj, "adid", b._ad_id.data());
+        yyjson_mut_obj_add_str(doc, bid_obj, "impid", b.imp_id.data());
+        yyjson_mut_obj_add_real(doc, bid_obj, "price", b.price);
+        yyjson_mut_obj_add_str(doc, bid_obj, "adid", b.ad_id.data());
     }
 
     size_t len;
@@ -46,10 +50,13 @@ void Bidder::send_http_200(asio::ip::tcp::socket& socket, const std::vector<Bid>
         "\r\n" + 
         std::string(json_body, len);
 
+    std::cout << "Sending response...\n";
     asio::write(socket, asio::buffer(http_response));
     
-    free(json_body);     yyjson_mut_doc_free(doc);
+    free(json_body);
+    yyjson_mut_doc_free(doc);
 }
+
 
 
 Bidder::Bidder(const CampaignStore& store) : store_(store) { }
@@ -66,6 +73,7 @@ bool Bidder::parse_request(std::string_view json_raw) {
         std::string temp = yyjson_get_str(id_val);
         std::cout << "before: temp: " << temp << "  " << typeid(temp).name() << '\n';
     }
+    std::cout << "before: current request ID: " << current_request_.id << "  " << typeid(current_request_.id).name() << '\n';
 
     yyjson_val* imp_arr = yyjson_obj_get(root, "imp");
     if (yyjson_is_arr(imp_arr)) {
@@ -92,6 +100,8 @@ bool Bidder::parse_request(std::string_view json_raw) {
     }
 
     yyjson_doc_free(doc);
+    std::cout << "after: current request ID: " << current_request_.id << '\n';
+    std::cout << "\nget ID: " <<yyjson_get_str(id_val) << "\n\n\n";
 
     std::cout << "Parsed BidRequest ID: " << current_request_.id << " with " 
               << current_request_.imps.size() << " impressions." << "\n\n\n";
@@ -128,7 +138,10 @@ void Bidder::handle_request(asio::ip::tcp::socket& socket, std::string_view json
     }
 
     Engine engine;
-    auto bids = engine.evaluate_request(current_request_, store_);
+    static GeoProvider geo; 
+    std::string_view country = geo.lookup(current_request_.device_ip);
+    auto bids = engine.evaluate_request(current_request_, store_, country);
+    std::cout << "Bids found: " << bids.size() << "\n";
 
     if (bids.empty()) {
         send_http_204(socket);

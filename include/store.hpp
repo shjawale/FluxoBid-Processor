@@ -13,20 +13,26 @@ namespace fluxobid {
 
 struct Campaign {
     uint32_t campaign_id;
-    std::string_view ad_id;
     double price;
     std::string_view target_country;
-    std::string_view ad_markup;
     int width;
     int height;
+    std::string_view ad_id;
+    std::string_view ad_markup;
+
+    Campaign() = default;
+    Campaign(uint32_t camp_id, double price, std::string_view country, int width, int height);
+    
+    void printCampaign();
 };
 
 class CampaignStore {
 private:
-    std::vector<Campaign> _campaigns;
-    std::unordered_map<std::string_view, std::vector<Campaign>> _campaigns_by_country;
+    std::vector<Campaign> campaigns_;
+    std::unordered_map<std::string_view, std::vector<Campaign>> campaigns_by_country_;
 
 public:
     std::optional<Campaign> find_match(const Imp& imp, std::string_view country) const;
+    void add_campaign(const Campaign& camp);
 };
 }

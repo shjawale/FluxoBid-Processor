@@ -4,12 +4,27 @@
 #include "../../include/store.hpp"
 
 namespace fluxobid {
+
+Campaign::Campaign(uint32_t camp_id, double price, std::string_view country, int width, int height) : campaign_id(camp_id), price(price), target_country(country), width(width), height(height), ad_id("."), ad_markup(".") {}
+
+void Campaign::printCampaign() {
+    std::cout << "printing campaign... campaign_id: " << campaign_id 
+    << "  price: " << price 
+    << "  target_country: " << target_country 
+    << "  width: " << width << "  height: " << height
+    << "  ad_id: " << ad_id 
+    << "  ad_markup: " << ad_markup << '\n';
+}
+
     
 std::optional<Campaign> CampaignStore::find_match(const Imp& imp, std::string_view country) const {
-    auto it = _campaigns_by_country.find(country);
-    if (it == _campaigns_by_country.end()) {
+    std::cout << "in find_match...  ";
+    std::cout << "country: " << country << '\n';
+    auto it = campaigns_by_country_.find(country);
+    if (it == campaigns_by_country_.end()) {
         return std::nullopt;
     }
+    std::cout << "it: " << typeid(it).name() << '\n';
 
     const std::vector<Campaign>& candidates = it->second;
     const Campaign* best_candidate = nullptr;
@@ -35,6 +50,13 @@ std::optional<Campaign> CampaignStore::find_match(const Imp& imp, std::string_vi
     }
 
     return std::nullopt;
+}
+
+void CampaignStore::add_campaign(const Campaign& camp) {
+    campaigns_.push_back(camp);
+    campaigns_by_country_[camp.target_country].push_back(camp);
+
+    campaigns_.back().printCampaign();
 }
 
 }

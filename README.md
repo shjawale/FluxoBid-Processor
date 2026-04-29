@@ -25,8 +25,9 @@ FluxoBid-Processor/
 ├── src/
 │   └── core/               # Bidder, Engine, and CampaignStore logic
 │   └── network/            # Server and Session connection management
-├── tests/
-│   └── test_bidder.cpp     # Unit Test suite (Catch2) verifying OpenRTB compliance
+├── tests/                  # Unit Test suite (Catch2) verifying OpenRTB compliance
+│   ├── test_bidder.cpp     
+│   └── test_engine.cpp     
 ├── CMakeLists.txt          # Modern CMake build with C++20 Module support
 └── main.cpp                # Application entry point & Asio event loop
 ```

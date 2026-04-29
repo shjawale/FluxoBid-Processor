@@ -6,7 +6,6 @@
 #include "../include/store.hpp"
 #include "../include/server.hpp"
 
-
 asio::awaitable<void> handle_session(asio::ip::tcp::socket socket, const fluxobid::CampaignStore& store) {
     try {
         char buffer[4096];
@@ -22,7 +21,6 @@ asio::awaitable<void> handle_session(asio::ip::tcp::socket socket, const fluxobi
     }
 }
 
-
 asio::awaitable<void> server_listener(const fluxobid::CampaignStore& store) {
     auto executor = co_await asio::this_coro::executor;
     asio::ip::tcp::acceptor acceptor(executor, {asio::ip::tcp::v4(), 8080});
@@ -36,6 +34,8 @@ asio::awaitable<void> server_listener(const fluxobid::CampaignStore& store) {
     }
 }
 
+
+
 int main() {
     asio::io_context io_context;
     
@@ -46,4 +46,3 @@ int main() {
     io_context.run();
     return 0;
 }
-

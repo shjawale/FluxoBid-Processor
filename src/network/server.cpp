@@ -11,8 +11,11 @@ void Server::do_accept() {
     acceptor_.async_accept(
         [this](std::error_code ec, asio::ip::tcp::socket socket) {
             if (!ec) {
+                // Create Session, hand off the socket, and start it
                 std::make_shared<Session>(std::move(socket), store_)->start();
             }
+            // Immediately listen for the next connection
+            std::cout << "Accepted connection\n";
             do_accept();
         });
 }

@@ -77,8 +77,9 @@ add_library(fluxo_core STATIC
     src/core/bidder.cpp
     src/core/engine.cpp
     src/core/store.cpp
-    src/core/server.cpp
-    src/core/session.cpp
+    src/network/server.cpp
+    src/network/session.cpp
+    src/network/geoprovider.cpp
 )
 
 target_include_directories(fluxo_core PUBLIC 
@@ -124,6 +125,16 @@ add_executable(bidder_tests
     tests/test_bidder.cpp
 )
 target_link_libraries(bidder_tests PRIVATE 
+    fluxo_core 
+    Catch2::Catch2WithMain
+    yyjson
+)
+
+
+add_executable(engine_tests 
+    tests/test_engine.cpp
+)
+target_link_libraries(engine_tests PRIVATE 
     fluxo_core 
     Catch2::Catch2WithMain
     yyjson
