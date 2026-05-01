@@ -19,6 +19,9 @@ struct Imp {
     std::optional<Banner> banner;
     std::optional<double> bidfloor;
     std::string_view bidfloorcur = "USD"; 
+
+    Imp() = default;
+    Imp(const std::string_view id, const std::optional<double> bidfloor) : id(id), bidfloor(bidfloor)  {}
 };
 
 struct Device {
@@ -41,6 +44,9 @@ struct BidRequest {
     std::optional<Device> device;
     std::string_view device_ip;
     std::optional<int> tmax;
+
+    BidRequest() = default;
+    BidRequest(const std::string_view id, const std::vector<Imp> imps, const std::string_view device_ip) : id(id), imps(imps), device_ip(device_ip) {}
 };
 
 }

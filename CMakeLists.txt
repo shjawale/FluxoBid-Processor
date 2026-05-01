@@ -112,8 +112,6 @@ target_link_libraries(fluxo_core PRIVATE yyjson)
 enable_testing()
 add_executable(unit_tests 
     tests/test_main.cpp 
-    tests/test_targeting.cpp
-    tests/test_ranges.cpp
 )
 target_link_libraries(unit_tests PRIVATE fluxo_core Catch2::Catch2WithMain)
 

@@ -1,3 +1,15 @@
+/*#ifndef __INTELLISENSE__
+module;
+#endif*/
+
+/*#include <sys/types.h>
+#include <endian.h>
+#include <byteswap.h>
+
+#define ASIO_NO_TS_EXECUTORS
+#define ASIO_DISABLE_CONCEPTS
+#define ASIO_HAS_STD_COROUTINE 1*/
+
 #include <asio.hpp>
 #include <yyjson.h>
 
@@ -5,6 +17,10 @@
 #include "../../include/metrics.hpp"
 #include "../../include/engine.hpp"
 #include "../../include/geoprovider.hpp"
+
+/*#ifndef __INTELLISENSE__
+export module fluxobid.bidder;
+#endif*/
 
 namespace fluxobid {
 
@@ -21,13 +37,17 @@ void Bidder::send_http_204(asio::ip::tcp::socket& socket) {
 }
 
 void Bidder::send_http_200(asio::ip::tcp::socket& socket, const std::vector<Bid>& bids) {
+    // Create a new JSON doc for writing
     yyjson_mut_doc* doc = yyjson_mut_doc_new(NULL);
     yyjson_mut_val* root = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, root);
 
+    // Set Top-Level Fields
+    // 'id' must match the incoming BidRequest.id
     yyjson_mut_obj_add_str(doc, root, "id", current_request_.id.data());
     yyjson_mut_obj_add_str(doc, root, "cur", "USD");
 
+    // Build the SeatBid array (required by spec)
     yyjson_mut_val* seatbid_arr = yyjson_mut_obj_add_arr(doc, root, "seatbid");
     yyjson_mut_val* seatbid_obj = yyjson_mut_arr_add_obj(doc, seatbid_arr);
     yyjson_mut_val* bid_arr = yyjson_mut_obj_add_arr(doc, seatbid_obj, "bid");
@@ -37,11 +57,14 @@ void Bidder::send_http_200(asio::ip::tcp::socket& socket, const std::vector<Bid>
         yyjson_mut_obj_add_str(doc, bid_obj, "impid", b.imp_id.data());
         yyjson_mut_obj_add_real(doc, bid_obj, "price", b.price);
         yyjson_mut_obj_add_str(doc, bid_obj, "adid", b.ad_id.data());
+        // In a real app, you'd add "adm" (ad markup) here
     }
 
+    // Serialize to string
     size_t len;
     char* json_body = yyjson_mut_write(doc, 0, &len);
 
+    // Construct HTTP 200 Header + Body
     std::string http_response = 
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: application/json\r\n"
@@ -51,9 +74,10 @@ void Bidder::send_http_200(asio::ip::tcp::socket& socket, const std::vector<Bid>
         std::string(json_body, len);
 
     std::cout << "Sending response...\n";
+    // Send and Cleanup
     asio::write(socket, asio::buffer(http_response));
     
-    free(json_body);
+    free(json_body); // Free the string allocated by yyjson
     yyjson_mut_doc_free(doc);
 }
 
@@ -62,11 +86,14 @@ void Bidder::send_http_200(asio::ip::tcp::socket& socket, const std::vector<Bid>
 Bidder::Bidder(const CampaignStore& store) : store_(store) { }
 
 bool Bidder::parse_request(std::string_view json_raw) {
+    // Read the JSON (Zero-copy flag)
     yyjson_doc* doc = yyjson_read(json_raw.data(), json_raw.size(), 0);
     if (!doc) return false;
 
     yyjson_val* root = yyjson_doc_get_root(doc);
     
+    // Map OpenRTB fields to our Struct
+    // "id" is required in OpenRTB 2.5
     yyjson_val* id_val = yyjson_obj_get(root, "id");
     if (id_val) {
         current_request_.id = yyjson_get_str(id_val);
@@ -75,6 +102,7 @@ bool Bidder::parse_request(std::string_view json_raw) {
     }
     std::cout << "before: current request ID: " << current_request_.id << "  " << typeid(current_request_.id).name() << '\n';
 
+    // Dig into the Impression array
     yyjson_val* imp_arr = yyjson_obj_get(root, "imp");
     if (yyjson_is_arr(imp_arr)) {
         size_t idx, max;
@@ -99,6 +127,7 @@ bool Bidder::parse_request(std::string_view json_raw) {
         }
     }
 
+    // Clean up the parser (not the strings, they point to json_raw!)
     yyjson_doc_free(doc);
     std::cout << "after: current request ID: " << current_request_.id << '\n';
     std::cout << "\nget ID: " <<yyjson_get_str(id_val) << "\n\n\n";
@@ -115,10 +144,14 @@ const BidRequest& Bidder::get_current_request() const {
 }
 
 RejectReason Bidder::validate_request(const BidRequest& req) {
+    // Mandatory ID check
     if (req.id.empty()) return RejectReason::MALFORMED_JSON;
 
+    // Empty Impression check
     if (req.imps.empty()) return RejectReason::NO_IMPRESSIONS;
 
+    // Deadline check (Crucial for high-concurrency)
+    // If tmax is less than 20ms, we likely won't finish in time after network jitter is factored in.
     if (req.tmax.has_value() && req.tmax.value() < 20) {
         return RejectReason::TIMEOUT_TOO_LOW;
     }
@@ -127,22 +160,26 @@ RejectReason Bidder::validate_request(const BidRequest& req) {
 }
 
 void Bidder::handle_request(asio::ip::tcp::socket& socket, std::string_view json_raw) {
+    // Parsing Phase
     if (!parse_request(json_raw)) {
         send_http_204(socket);
         return;
     }
 
+    // Validation Phase (No-Bid Early Exit)
     if (current_request_.imps.empty() || current_request_.id.empty()) {
         send_http_204(socket);
         return;
     }
 
+    // Decisioning Phase (Calling the Engine)
     Engine engine;
     static GeoProvider geo; 
     std::string_view country = geo.lookup(current_request_.device_ip);
     auto bids = engine.evaluate_request(current_request_, store_, country);
     std::cout << "Bids found: " << bids.size() << "\n";
 
+    // Response Phase
     if (bids.empty()) {
         send_http_204(socket);
     } else {

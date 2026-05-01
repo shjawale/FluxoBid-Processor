@@ -10,30 +10,30 @@ TEST_CASE("Engine Auction Logic", "[engine][auction]") {
     fluxobid::Engine engine;
     fluxobid::CampaignStore store;
 
-    fluxobid::Campaign campA{'A', 1.00, "US", 300, 250};
+    fluxobid::Campaign campA{101, "nike_summer_01", 1.00, "US", 300, 250};
     store.add_campaign(campA);
 
-    fluxobid::Campaign campB{'B', 2.00, "US", 300, 250};
+    fluxobid::Campaign campB{102, "adidas_summer_02", 2.00, "US", 300, 250};
     store.add_campaign(campB);
 
-    fluxobid::Campaign campC{'C', 5.00, "UK", 300, 250};
+    fluxobid::Campaign campC{103, "asic_summer_02", 5.00, "UK", 300, 250};
     store.add_campaign(campC);
 
     SECTION("Engine picks the highest-paying valid campaign") {
-        fluxobid::BidRequest req;
-        req.device_ip = "1.1.1.1"; 
-        req.imps.push_back({.id = "slot_1", .bidfloor = 0.50});
+        std::vector<fluxobid::Imp> newImp{{"slot_1", 0.50}};
+        fluxobid::BidRequest req{"req_1", newImp, "1.1.1.1"};
         
         auto bids = engine.evaluate_request(req, store, "US");
 
         REQUIRE(bids.size() == 1);
-        REQUIRE(bids[0].ad_id == "B");
+        std::cout << "bids[0].ad_id: " << bids[0].ad_id << '\n';
+        REQUIRE(bids[0].ad_id == "adidas_summer_02");
         REQUIRE(bids[0].price == 2.00);
     }
 
     SECTION("Engine respects the Bid Floor") {
-        fluxobid::BidRequest req;
-        req.imps.push_back({.id = "slot_1", .bidfloor = 3.00}); 
+        std::vector<fluxobid::Imp> newImp{{"slot_1", 3.00}};
+        fluxobid::BidRequest req{"req_2", newImp, "8.8.8.8"};
         
         auto bids = engine.evaluate_request(req, store, "US");
 
@@ -41,9 +41,8 @@ TEST_CASE("Engine Auction Logic", "[engine][auction]") {
     }
 
     SECTION("Engine handles multiple impressions independently") {
-        fluxobid::BidRequest req;
-        req.imps.push_back({.id = "us_slot", .bidfloor = 0.10});
-        req.imps.push_back({.id = "uk_slot", .bidfloor = 0.10});
+        std::vector<fluxobid::Imp> newImp{{"us_slot", 0.10}, {"uk_slot", 0.10}};
+        fluxobid::BidRequest req{"req_2", newImp, "8.8.8.8"};
 
         auto bids = engine.evaluate_request(req, store, "US"); 
         
@@ -52,9 +51,9 @@ TEST_CASE("Engine Auction Logic", "[engine][auction]") {
     }
 
     SECTION("Engine returns nothing when no geography matches") {
-        fluxobid::BidRequest req;
-        req.imps.push_back({.id = "slot_1"});
-        
+        std::vector<fluxobid::Imp> newImp{{"slot_1", 0.0}};
+        fluxobid::BidRequest req{"req_2", newImp, "8.8.8.8"};
+
         auto bids = engine.evaluate_request(req, store, "FR");
 
         REQUIRE(bids.empty());

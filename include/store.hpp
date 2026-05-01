@@ -13,15 +13,15 @@ namespace fluxobid {
 
 struct Campaign {
     uint32_t campaign_id;
+    std::string_view ad_id;
     double price;
     std::string_view target_country;
     int width;
     int height;
-    std::string_view ad_id;
     std::string_view ad_markup;
 
     Campaign() = default;
-    Campaign(uint32_t camp_id, double price, std::string_view country, int width, int height);
+    Campaign(uint32_t campaign_id, std::string_view ad_id, double price, std::string_view country, int width, int height);
     
     void printCampaign();
 };
