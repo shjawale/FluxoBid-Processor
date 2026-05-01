@@ -4,19 +4,17 @@
 #include "../../include/geoprovider.hpp"
 
 namespace fluxobid {
-// In a real app, this would load a CSV or binary file into the map
 GeoProvider::GeoProvider() {
     ip_map_["127.0.0.1"] = "LOCAL";
     ip_map_["1.1.1.1"]   = "AU";
     ip_map_["8.8.8.8"]   = "US";
 }
 
-// Standard O(1) lookup
 std::string_view GeoProvider::lookup(std::string_view ip) const {
     auto it = ip_map_.find(ip);
     if (it != ip_map_.end()) {
         return it->second;
     }
-    return "UNKNOWN"; // Fallback if IP isn't in our "database"
+    return "UNKNOWN";
 }
 }
