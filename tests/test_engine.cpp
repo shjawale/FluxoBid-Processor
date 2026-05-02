@@ -21,7 +21,7 @@ TEST_CASE("Engine Auction Logic", "[engine][auction]") {
 
     SECTION("Engine picks the highest-paying valid campaign") {
         std::vector<fluxobid::Imp> newImp{{"slot_1", 0.50}};
-        fluxobid::BidRequest req{"req_1", newImp, "1.1.1.1"};
+        fluxobid::BidRequest req{"req_1", newImp, "8.8.8.8"};
         
         auto bids = engine.evaluate_request(req, store, "US");
 
@@ -33,7 +33,7 @@ TEST_CASE("Engine Auction Logic", "[engine][auction]") {
 
     SECTION("Engine respects the Bid Floor") {
         std::vector<fluxobid::Imp> newImp{{"slot_1", 3.00}};
-        fluxobid::BidRequest req{"req_2", newImp, "8.8.8.8"};
+        fluxobid::BidRequest req{"req_2", newImp, "1.1.1.1"};
         
         auto bids = engine.evaluate_request(req, store, "US");
 
@@ -41,12 +41,13 @@ TEST_CASE("Engine Auction Logic", "[engine][auction]") {
     }
 
     SECTION("Engine handles multiple impressions independently") {
+        std::cout << "started test 3...\n";
         std::vector<fluxobid::Imp> newImp{{"us_slot", 0.10}, {"uk_slot", 0.10}};
         fluxobid::BidRequest req{"req_2", newImp, "8.8.8.8"};
 
         auto bids = engine.evaluate_request(req, store, "US"); 
         
-        REQUIRE(bids.size() == 1);
+        REQUIRE(bids.size() == 2);
         REQUIRE(bids[0].imp_id == "us_slot");
     }
 

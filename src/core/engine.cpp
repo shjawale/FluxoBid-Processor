@@ -17,8 +17,7 @@ bool Engine::check_country(const Campaign& campaign, std::string_view target_cou
 
 
 std::vector<Bid> Engine::evaluate_request(const BidRequest& req, const CampaignStore& store, std::string_view target_country) {
-    std::vector<Bid> wins(req.imps.size());
-    int i = 0;
+    std::vector<Bid> wins;
 
     for (const auto& imp : req.imps) {
         static GeoProvider geo; 
@@ -28,8 +27,7 @@ std::vector<Bid> Engine::evaluate_request(const BidRequest& req, const CampaignS
         if (best_campaign != std::nullopt) {
             if (Engine::check_country(*best_campaign, target_country)) {
                 if (best_campaign->price >= imp.bidfloor.value_or(0.0)) {
-                    wins[i] = Bid(imp.id, best_campaign->price, best_campaign->ad_id);
-                    i++;
+                    wins.push_back(Bid(imp.id, best_campaign->price, best_campaign->ad_id));
                 }
             }
         }
