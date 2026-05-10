@@ -1,11 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
-#include "../include/bidder.hpp"
 #include <iostream>
 
-uint32_t factorial( uint32_t number ) {
-    return number <= 1 ? number : factorial(number-1) * number;
-}
+#include "../include/bidder.hpp"
 
 TEST_CASE( "Parse a JSON request", "[request]" ) {
     std::string_view json_raw = R"(
@@ -42,8 +39,6 @@ TEST_CASE( "Parse a JSON request", "[request]" ) {
 
     fluxobid::Bidder bidder;
     bidder.parse_request(json_raw);
-
-    /* DO THIS */
 }
 
 
@@ -65,14 +60,11 @@ TEST_CASE("Bidder parses OpenRTB 2.5 JSON correctly test 1", "[openrtb][parsing]
         auto& req = bidder.get_current_request();
         std::cout << "here\n";
 
-        // Validate top-level ID
         //REQUIRE(req.id == "fluxo-test-req-001");
 
-        // Validate Impression array
         REQUIRE(req.imps.size() == 1);
         REQUIRE(req.imps[0].id == "1");
         
-        // Validate Bid Floor (using REQUIRE_THAT for floating point if needed)
         REQUIRE(req.imps[0].bidfloor.has_value());
         REQUIRE(req.imps[0].bidfloor.value() == 0.50);
     }
@@ -105,15 +97,12 @@ TEST_CASE("Bidder parses OpenRTB 2.5 JSON correctly test 2", "[openrtb][parsing]
         bidder.parse_request(json_raw2);
         auto& req = bidder.get_current_request();
 
-        // Validate top-level ID
         REQUIRE(req.id == "fluxo-test-req-002");
 
-        // Validate Impression array
         REQUIRE(req.imps.size() == 2);
         REQUIRE(req.imps[0].id == "2");
         REQUIRE(req.imps[1].id == "3");
         
-        // Validate Bid Floor (using REQUIRE_THAT for floating point if needed)
         REQUIRE(req.imps[0].bidfloor.has_value());
         REQUIRE(req.imps[0].bidfloor.value() == 0.60);
     }
