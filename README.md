@@ -35,7 +35,7 @@ FluxoBid-Processor/
 ## Current Progress: Verified Parsing & Unit Testing
 The project has successfully reached the Ingestion & Decisioning Milestone, moving from raw network bytes to a validated bidding decision.
 
-*    OpenRTB Ingestion & Auction Logic: Successfully implemented a "Sieve" matcher that parses multi-impression OpenRTB 2.5 payloads and filters campaigns based on Geography, Size, and Price Floor.
+*    OpenRTB Ingestion & Auction Logic: Implemented a "Sieve" matcher that parses multi-impression OpenRTB 2.5 payloads and filters campaigns based on Geography, Size, and Price Floor.
 *    Asynchronous Network Core: Developed a custom Server/Session architecture using Clang 16+ and Asio to handle concurrent TCP connections with minimal overhead.
 *    Protocol Handling: Supports the standard OpenRTB 2.5 response lifecycle, including automated HTTP 204 "No-Bid" signals and dynamic JSON BidResponse generation via yyjson.
 *    Automated Verification: Core logic is verified via a Catch2 v3 test suite (test_bidder) that validates stable field mapping, campaign matchmaking, and memory safety across the pipeline.
